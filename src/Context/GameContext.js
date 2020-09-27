@@ -5,12 +5,14 @@ export const GameContext = createContext();
 
 export const GameProvider = props => {
     const [dataGame, setDataGame] = useState(null)
+    const [defaultGame, setDefaultGame] = React.useState([])
     
     useEffect(() => {
         if (dataGame === null) {
             axios.get(`https://backendexample.sanbersy.com/api/data-game`)
             .then(res => {
                 setDataGame(res.data)
+                setDefaultGame(res.data)
             })
         }
     }, [dataGame]);
@@ -52,7 +54,7 @@ export const GameProvider = props => {
     })
 
     return(
-        <GameContext.Provider value={[dataGame, setDataGame, inputDataGame, setInputDataGame, formValues, setFormValues]}>
+        <GameContext.Provider value={[dataGame, setDataGame, inputDataGame, setInputDataGame, formValues, setFormValues, defaultGame, setDefaultGame]}>
             {props.children}
         </GameContext.Provider>
     )

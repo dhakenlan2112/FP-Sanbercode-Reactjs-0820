@@ -1,7 +1,8 @@
-import React, { useContext } from 'react'
+import React, { useContext } from 'react';
+import {useHistory} from 'react-router-dom';
 import { withStyles, makeStyles } from '@material-ui/core/styles';
-import { MovieContext } from '../Context/MovieContext'
-import { UserContext } from '../Context/UserContext'
+import { MovieContext } from '../Context/MovieContext';
+import { UserContext } from '../Context/UserContext';
 import SaveIcon from '@material-ui/icons/Save';
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
@@ -9,6 +10,7 @@ import TextareaAutosize from '@material-ui/core/TextareaAutosize';
 import MenuItem from '@material-ui/core/MenuItem';
 import Button from '@material-ui/core/Button';
 import axios from "axios";
+import { Redirect } from 'react-router-dom'
 
 const useStyles = makeStyles({
     table: {
@@ -73,43 +75,104 @@ const genre = [
 
 const MovieForm = () => {
     const classes = useStyles();
-    const [dataMovie, setDataMovie, inputDataMovie, setInputDataMovie, formValues, setFormValues] = useContext(MovieContext);
+    let history = useHistory();
+    const [dataMovie, setDataMovie, inputDataMovie, setInputDataMovie, formValues, setFormValues, ,setDefaultMovie] = useContext(MovieContext);
     const [years, setYears] = React.useState('2001');
     const [user] = useContext(UserContext)
 
     const submitHandler = (e) => {
         e.preventDefault()
-        const { title, description, year, duration, genre, rating, image_url } = formValues;
+        const { title, description, year, duration, genre, rating, image_url, id } = formValues;
+        console.log(formValues.id)
+        if (formValues.id === null) {
             axios.post("https://backendexample.sanbersy.com/api/data-movie", {
-            title,
-            description,
-            year: parseInt(year.value),
-            duration: parseInt(duration),
-            genre: genre.value,
-            rating: parseInt(rating.value),
-            image_url
-        }, {
-            headers: {
-                'Authorization': `Bearer ${JSON.parse(localStorage.getItem("user")).token}` 
-            }
-        })
-        
-        
-        // console.log("outpuit====", {
-        //     title,
-        //     description,
-        //     year: parseInt(year.value),
-        //     duration: parseInt(duration),
-        //     genre: genre.value,
-        //     rating: parseInt(rating.value),
-        //     image_url
-        // })
-        // console.log("formValues", formValues)
-    }
+                        title,
+                        description,
+                        year: parseInt(year.value),
+                        duration: parseInt(duration),
+                        genre: genre.value,
+                        rating: parseInt(rating.value),
+                        image_url,
+                        id
+                    }, {
+                        headers: {
+                            'Authorization': `Bearer ${JSON.parse(localStorage.getItem("user")).token}` 
+                        }
+                    }).then(res => {
+                       setDataMovie([
+                           ...dataMovie, {
+                                id: res.data.id,
+                                title,
+                                description,
+                                year: parseInt(year.value),
+                                duration: parseInt(duration),
+                                genre: genre.value,
+                                rating: parseInt(rating.value),
+                                image_url,
+            
+                           }
+                       ])
+                       setDefaultMovie([
+                        ...dataMovie, {
+                             id: res.data.id,
+                             title,
+                             description,
+                             year: parseInt(year.value),
+                             duration: parseInt(duration),
+                             genre: genre.value,
+                             rating: parseInt(rating.value),
+                             image_url,
+         
+                        }
+                    ])
 
-    React.useEffect(() => {
-        console.log("formValues===", formValues)
-    }, [formValues])
+                    })
+        } else {
+            axios.put(`https://backendexample.sanbersy.com/api/data-movie/${formValues.id}`, {
+                title,
+                description,
+                year: parseInt(year.value),
+                duration: parseInt(duration),
+                genre: genre.value,
+                rating: parseInt(rating.value),
+                image_url
+            },  {
+                headers: {
+                    'Authorization': `Bearer ${JSON.parse(localStorage.getItem("user")).token}` 
+                }
+            }).then(() => {
+                let idataMovie = dataMovie.find(el => el.id === formValues.id)
+                idataMovie.title = title
+                idataMovie.description = description
+                idataMovie.year = parseInt(year.value)
+                idataMovie.duration = parseInt(duration)
+                idataMovie.genre = genre
+                idataMovie.rating = parseInt(rating.value)
+                idataMovie.image_url = image_url
+
+                axios.get(`https://backendexample.sanbersy.com/api/data-movie`)
+                .then(res => {
+                    setDataMovie(res.data)
+                    setDefaultMovie(res.data)
+                })
+            })
+        }
+        setFormValues({
+            title: "",
+            description: "",
+            year: 2020,
+            duration: 0,
+            genre: "",
+            rating: 0,
+            image_url: "",
+            id: null
+        })
+       
+    }      
+
+    // React.useEffect(() => {
+    //     console.log("formValues===", formValues)
+    // }, [formValues])
     
     return (
         <>

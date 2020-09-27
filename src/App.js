@@ -14,6 +14,8 @@ import Movies from './Pages/Movies'
 import Games from './Pages/Games'
 import Login from './Pages/Login'
 import Register from './Pages/Register'
+import ChangePassword from './Pages/ChangePassword'
+
 
 import Layout from './Component/Layout'
 import Footer from './Component/Footer'
@@ -41,6 +43,9 @@ function App() {
                 </ProtectedRoute>
                 <ProtectedRoute path="/games">
                   <Games />
+                </ProtectedRoute>
+                <ProtectedRoute path="/change_password">
+                  <ChangePassword />
                 </ProtectedRoute>
                 <Route path="/login">
                   <Login />

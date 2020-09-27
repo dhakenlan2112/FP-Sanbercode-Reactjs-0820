@@ -5,12 +5,14 @@ export const MovieContext = createContext();
 
 export const MovieProvider = props => {
     const [dataMovie, setDataMovie] = useState(null)
+    const [defaultMovie, setDefaultMovie] = React.useState([])
     
     useEffect(() => {
         if (dataMovie === null) {
             axios.get(`https://backendexample.sanbersy.com/api/data-movie`)
             .then(res => {
                 setDataMovie(res.data)
+                setDefaultMovie(res.data)
             })
         }
     }, [dataMovie]);
@@ -18,7 +20,7 @@ export const MovieProvider = props => {
     const [inputDataMovie, setInputDataMovie] = useState({
         title: "",
         description: "",
-        year: 2020,
+        year: 0,
         duration: 0,
         genre: "",
         rating: 0,
@@ -42,11 +44,12 @@ export const MovieProvider = props => {
             value: "",
             label: ""
         },
-        image_url: ""
+        image_url: "",
+        id: null
     })
 
     return(
-        <MovieContext.Provider value={[dataMovie, setDataMovie, inputDataMovie, setInputDataMovie, formValues, setFormValues]}>
+        <MovieContext.Provider value={[dataMovie, setDataMovie, inputDataMovie, setInputDataMovie, formValues, setFormValues, defaultMovie, setDefaultMovie]}>
             {props.children}
         </MovieContext.Provider>
     )

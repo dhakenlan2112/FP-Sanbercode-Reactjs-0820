@@ -21,8 +21,9 @@ import HomeIcon from '@material-ui/icons/Home';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import MovieIcon from '@material-ui/icons/Movie';
 import GamesIcon from '@material-ui/icons/Games';
-import { Link, useHistory } from 'react-router-dom'
-import logo from '../img/logo.png'
+import { Link, useHistory } from 'react-router-dom';
+import logo from '../img/logo.png';
+import ChangePassword from '../Pages/ChangePassword'
 
 const drawerWidth = 240;
 
@@ -146,6 +147,13 @@ export default function MiniDrawer({ children }) {
               <React.Fragment>
                 <span style={{ marginRight: 16 }}>
                   Hi, {user.name}
+                </span>
+                <span>
+                <Link to="/change_password" style={{ color: "inherit" }}>
+                  <Button color="inherit">
+                    Change Password
+                </Button>
+                </Link>
                 </span>
                 <Button onClick={handleLogout} color="inherit">
                   Logout

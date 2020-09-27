@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import axios from 'axios'
 import { MovieContext } from '../Context/MovieContext'
 import { UserContext } from '../Context/UserContext';
@@ -17,6 +17,25 @@ import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
 import TextareaAutosize from '@material-ui/core/TextareaAutosize';
 import MenuItem from '@material-ui/core/MenuItem';
+
+function compareAsc(a, b, key) {
+    if (a[key] < b[key]) {
+        return -1;
+    }
+    if (a[key] > b[key]) {
+        return 1;
+    }
+    return 0;
+}
+function compareDesc(a, b, key) {
+    if (a[key] > b[key]) {
+        return -1;
+    }
+    if (a[key] < b[key]) {
+        return 1;
+    }
+    return 0;
+}
 
 const StyledTableCell = withStyles((theme) => ({
     head: {
@@ -46,25 +65,15 @@ const useStyles = makeStyles({
 const MovieList = () => {
     const classes = useStyles()
     const [user] = useContext(UserContext)
-    const [dataMovie, setDataMovie, inputDataMovie, setInputDataMovie, formValues, setFormValues] = useContext(MovieContext);
+    const [dataMovie, setDataMovie, inputDataMovie, setInputDataMovie, formValues, setFormValues, defaultMovie, setDefaultMovie] = useContext(MovieContext);
+    const [searchTitle, setSearchTitle] = React.useState()
+    const [filteredData, setFilteredData] = React.useState([])
+    const [sortState, sort] = React.useState("default")
 
     const editMovie = (id) => {
         let idDataMovie = id
         let idataMovie = dataMovie.find(x => x.id === idDataMovie)
-        //console.log("event===", event)
-        //console.log("idDataMovie===", idDataMovie)
         console.log("dataMovie", dataMovie)
-        //console.log("idataMovie", idataMovie)
-        // setInputDataMovie({
-        //     title: idataMovie.title,
-        //     description: idataMovie.description,
-        //     year: idataMovie.year.value,
-        //     duration: idataMovie.duration,
-        //     genre: idataMovie.genre,
-        //     rating: idataMovie.rating,
-        //     image_url: idataMovie.image_url,
-        //     id: idDataMovie.id
-        // })
 
         setFormValues({
             title: idataMovie.title || "",
@@ -82,31 +91,90 @@ const MovieList = () => {
                 label: idataMovie.rating,
                 value: idataMovie.rating
             }) || "",
-            image_url: idataMovie.image_url || ""
+            image_url: idataMovie.image_url || "",
+            id: idataMovie.id || ""
         })
     }
 
     React.useEffect(() => {
-        console.log("dataMovie====", dataMovie)
-    }, [dataMovie])
+        if (dataMovie && searchTitle) {
+            let filteredDataMovie = dataMovie.filter(movie => {
+                return movie.title.toLowerCase().includes(searchTitle.toLowerCase()) ||
+                    movie.description.toLowerCase().includes(searchTitle.toLowerCase()) ||
+                    movie.genre.toLowerCase().includes(searchTitle.toLowerCase())
+            })
+            setFilteredData(filteredDataMovie)
+        } else {
+            setFilteredData([])
+        }
+    }, [searchTitle, dataMovie])
 
-    const deleteMovie = (id) =>{
+    React.useEffect(() => {
+        console.log('sortState', sortState)
+    }, [sortState])
+
+    React.useEffect(() => {
+        let sorted;
+        switch (sortState) {
+            case "default":
+                setDataMovie([...defaultMovie]);
+                break;
+            case "asc":
+                sorted = dataMovie.sort((a, b) => compareAsc(a, b, "title"));
+                setDataMovie([...sorted])
+                break;
+            case "desc":
+                sorted = dataMovie.sort((a, b) => compareDesc(a, b, "title"));
+                setDataMovie([...sorted])
+                break;
+            default:
+                console.error("only 'asc' and 'desc'")
+                break;
+        }
+    }, [sortState, defaultMovie])
+
+    const deleteMovie = (id) => {
         var idDataMovie = id
-        axios.delete(`https://backendexample.sanbersy.com/api/data-movie/${idDataMovie}`, {headers: {"Authorization" : `Bearer ${user.token}`}} )
-        .then(res => {
-          var newDataMovie = dataMovie.filter(x=> x.id !== idDataMovie)
-          console.log(res)
-          setDataMovie(newDataMovie)
-        })
-      }
-    
+        axios.delete(`https://backendexample.sanbersy.com/api/data-movie/${idDataMovie}`, { headers: { "Authorization": `Bearer ${user.token}` } })
+            .then(res => {
+                var newDataMovie = dataMovie.filter(x => x.id !== idDataMovie)
+                console.log(res)
+                setDataMovie(newDataMovie)
+                setDefaultMovie(newDataMovie)
+            })
+    }
+
     return (
         <>
+            <div>
+                Search
+            </div>
+            <div>
+                <TextField
+                    label="Title | Description | Genre"
+                    value={searchTitle}
+                    fullWidth
+                    onChange={(e) => setSearchTitle(e.target.value)}
+                    style={{ marginBottom: 40 }}
+                    InputLabelProps={{
+                        shrink: true,
+                    }}
+                />
+            </div>
+
             <TableContainer component={Paper}>
                 <Table className={classes.table} aria-label="customized table">
                     <TableHead>
                         <TableRow>
-                            <StyledTableCell>Movies Title</StyledTableCell>
+                            <StyledTableCell style={{cursor: "pointer"}} onClick={() => {
+                                if(sortState === "asc"){
+                                    sort('desc')
+                                } else if(sortState === "desc") {
+                                    sort('default')
+                                } else {
+                                    sort('asc')
+                                }
+                            }}>Movies Title {sortState === "default" ? "" : `(${sortState})`}</StyledTableCell>
                             <StyledTableCell align="right">Description</StyledTableCell>
                             <StyledTableCell align="right">Year</StyledTableCell>
                             <StyledTableCell align="right">Rating</StyledTableCell>
@@ -117,7 +185,7 @@ const MovieList = () => {
                     </TableHead>
                     <TableBody>
                         {
-                            dataMovie !== null && dataMovie.map((el, idx) => {
+                            (filteredData.length && filteredData.map((el, idx) => {
                                 return (
                                     <StyledTableRow key={el.title}>
                                         <StyledTableCell component="th" scope="row">
@@ -152,7 +220,43 @@ const MovieList = () => {
                                         </StyledTableCell>
                                     </StyledTableRow>
                                 )
-                            })}
+                            })) ||
+                            (dataMovie !== null && dataMovie.map((el, idx) => {
+                                return (
+                                    <StyledTableRow key={el.title}>
+                                        <StyledTableCell component="th" scope="row">
+                                            {el.title}
+                                        </StyledTableCell>
+                                        <StyledTableCell align="right">{el.description}</StyledTableCell>
+                                        <StyledTableCell align="right">{el.year}</StyledTableCell>
+                                        <StyledTableCell align="right">{el.rating}</StyledTableCell>
+                                        <StyledTableCell align="right">{el.duration}</StyledTableCell>
+                                        <StyledTableCell align="right">{el.genre}</StyledTableCell>
+                                        <StyledTableCell align="right">
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                size="small"
+                                                className={classes.button}
+                                                startIcon={<SaveIcon />}
+                                                onClick={() => editMovie(el.id)}
+                                            >
+                                                Edit
+                                        </Button>
+                                            <Button
+                                                variant="contained"
+                                                color="secondary"
+                                                size="small"
+                                                className={classes.button}
+                                                startIcon={<DeleteIcon />}
+                                                onClick={() => deleteMovie(el.id)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </StyledTableCell>
+                                    </StyledTableRow>
+                                )
+                            }))}
                     </TableBody>
                 </Table>
             </TableContainer>

@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { UserContext } from '../Context/UserContext'
-import axios from 'axios'
+import { UserContext } from '../Context/UserContext';
+import axios from 'axios';
 import { Redirect } from 'react-router-dom'
 import Avatar from '@material-ui/core/Avatar';
 import Button from '@material-ui/core/Button';

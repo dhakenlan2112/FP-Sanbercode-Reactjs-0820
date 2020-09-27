@@ -18,6 +18,25 @@ import Typography from '@material-ui/core/Typography';
 import TextareaAutosize from '@material-ui/core/TextareaAutosize';
 import MenuItem from '@material-ui/core/MenuItem';
 
+function compareAsc(a, b, key) {
+    if (a[key] < b[key]) {
+        return -1;
+    }
+    if (a[key] > b[key]) {
+        return 1;
+    }
+    return 0;
+}
+function compareDesc(a, b, key) {
+    if (a[key] > b[key]) {
+        return -1;
+    }
+    if (a[key] < b[key]) {
+        return 1;
+    }
+    return 0;
+}
+
 const StyledTableCell = withStyles((theme) => ({
     head: {
         backgroundColor: theme.palette.common.black,
@@ -46,7 +65,10 @@ const useStyles = makeStyles({
 const GameList = () => {
     const classes = useStyles()
     const [user] = useContext(UserContext)
-    const [dataGame, setDataGame, inputDataGame, setInputDataGame, formValues, setFormValues] = useContext(GameContext);
+    const [dataGame, setDataGame, inputDataGame, setInputDataGame, formValues, setFormValues, defaultGame, setDefaultGame] = useContext(GameContext);
+    const [searchTitle, setSearchTitle] = React.useState()
+    const [filteredData, setFilteredData] = React.useState([])
+    const [sortState, sort] = React.useState("default")
 
     const editGame = (id) => {
         let idDataGame = id
@@ -78,14 +100,47 @@ const GameList = () => {
     }
 
     React.useEffect(() => {
+        if(dataGame && searchTitle){
+            let filteredDataGame = dataGame.filter(game => {
+                return game.name.toLowerCase().includes(searchTitle.toLowerCase()) ||
+                game.genre.toLowerCase().includes(searchTitle.toLowerCase()) ||
+                game.platform.toLowerCase().includes(searchTitle.toLowerCase()) 
+            })
+            setFilteredData(filteredDataGame)
+        } else {
+            setFilteredData([])
+        }
+    }, [searchTitle, dataGame])
+
+    React.useEffect(() => {
         console.log("dataGame ====", dataGame)
     }, [dataGame])
+
+    React.useEffect(() => {
+        let sorted;
+        switch (sortState) {
+            case "default":
+                setDataGame([...defaultGame]);
+                break;
+            case "asc":
+                sorted = dataGame.sort((a, b) => compareAsc(a, b, "name"));
+                setDataGame([...sorted])
+                break;
+            case "desc":
+                sorted = dataGame.sort((a, b) => compareDesc(a, b, "name"));
+                setDataGame([...sorted])
+                break;
+            default:
+                console.error("only 'asc' and 'desc'")
+                break;
+        }
+    }, [sortState, defaultGame])
 
     const deleteGame = (id) => {
         let idDataGame = id
         let newDataGame = dataGame.filter(el => el.id !== idDataGame)
 
-        axios.delete(`https://backendexample.sanbersy.com/api/data-game/${idDataGame}`, {headers: {"Authorization" : `Bearer ${user.token}`}}     )
+        axios.delete(`https://backendexample.sanbersy.com/api/data-game/${idDataGame}`, { headers: { "Authorization": `Bearer ${user.token}` } })
             .then(res => {
                 console.log(res)
             })
@@ -94,11 +149,34 @@ const GameList = () => {
 
     return (
         <>
+            <div>
+                Search
+            </div>
+            <div>
+                <TextField
+                    label="Title | Genre | Platform"
+                    value={searchTitle}
+                    fullWidth
+                    onChange={(e) => setSearchTitle(e.target.value)}
+                    style={{ marginBottom: 40 }}
+                    InputLabelProps={{
+                        shrink: true,
+                    }}
+                />
+            </div>
             <TableContainer component={Paper}>
                 <Table className={classes.table} aria-label="customized table">
                     <TableHead>
                         <TableRow>
-                            <StyledTableCell>Game Title</StyledTableCell>
+                            <StyledTableCell  style={{cursor: "pointer"}} onClick={() => {
+                                if(sortState === "asc"){
+                                    sort('desc')
+                                } else if(sortState === "desc") {
+                                    sort('default')
+                                } else {
+                                    sort('asc')
+                                }
+                            }}>Game Title {sortState === "default" ? "" : `(${sortState})`}</StyledTableCell>
                             <StyledTableCell align="right">Genre</StyledTableCell>
                             <StyledTableCell align="right">Platform</StyledTableCell>
                             <StyledTableCell align="right">Single Player</StyledTableCell>
@@ -109,9 +187,9 @@ const GameList = () => {
                     </TableHead>
                     <TableBody>
                         {
-                            dataGame !== null && dataGame.map((el, idx) => {
+                            (filteredData.length && filteredData.map((el, idx) => {
                                 return (
-                                    <StyledTableRow key={el.title}>
+                                    <StyledTableRow key={el.name}>
                                         <StyledTableCell component="th" scope="row">
                                             {el.name}
                                         </StyledTableCell>
@@ -121,15 +199,15 @@ const GameList = () => {
                                         <StyledTableCell align="right">{el.multiplayer}</StyledTableCell>
                                         <StyledTableCell align="right">{el.release}</StyledTableCell>
                                         <StyledTableCell align="right">
-                                        <Button
-                                            variant="contained"
-                                            color="primary"
-                                            size="small"
-                                            className={classes.button}
-                                            startIcon={<SaveIcon />}
-                                            onClick={() => editGame(el.id)}
-                                        >
-                                            Edit
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                size="small"
+                                                className={classes.button}
+                                                startIcon={<SaveIcon />}
+                                                onClick={() => editGame(el.id)}
+                                            >
+                                                Edit
                                         </Button>
                                             <Button
                                                 variant="contained"
@@ -144,7 +222,43 @@ const GameList = () => {
                                         </StyledTableCell>
                                     </StyledTableRow>
                                 )
-                            })}
+                            })) ||
+                            (dataGame !== null && dataGame.map((el, idx) => {
+                                return (
+                                    <StyledTableRow key={el.name}>
+                                        <StyledTableCell component="th" scope="row">
+                                            {el.name}
+                                        </StyledTableCell>
+                                        <StyledTableCell align="right">{el.genre}</StyledTableCell>
+                                        <StyledTableCell align="right">{el.platform}</StyledTableCell>
+                                        <StyledTableCell align="right">{el.singlePlayer}</StyledTableCell>
+                                        <StyledTableCell align="right">{el.multiplayer}</StyledTableCell>
+                                        <StyledTableCell align="right">{el.release}</StyledTableCell>
+                                        <StyledTableCell align="right">
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                size="small"
+                                                className={classes.button}
+                                                startIcon={<SaveIcon />}
+                                                onClick={() => editGame(el.id)}
+                                            >
+                                                Edit
+                                        </Button>
+                                            <Button
+                                                variant="contained"
+                                                color="secondary"
+                                                size="small"
+                                                className={classes.button}
+                                                startIcon={<DeleteIcon />}
+                                                onClick={() => deleteGame(el.id)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </StyledTableCell>
+                                    </StyledTableRow>
+                                )
+                            }))}
                     </TableBody>
                 </Table>
             </TableContainer>

@@ -14,12 +14,12 @@ import Divider from '@material-ui/core/Divider'
 
 const useStyles = makeStyles({
     root: {
-        width: 500,
+        width: 400,
         marginRight: 20,
         marginTop: 20,
     },
     media: {
-        height: 700,
+        height: 600,
     },
     card: {
         marginRight: 20
